@@ -1,0 +1,1 @@
+// Este arquivo foi desativado. O frontend não utiliza mais Supabase.
