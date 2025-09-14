@@ -9,9 +9,13 @@ export async function getRooms(req: Request, res: Response) {
       where: { isActive: true },
       orderBy: { name: 'asc' }
     })
-    res.json(rooms)
+      res.json(rooms);
   } catch (error) {
-    res.status(500).json({ error: 'Erro ao buscar salas' })
+      console.error(error);
+      res.status(500).json({
+        error: 'Erro interno do servidor',
+        details: process.env.NODE_ENV === 'development' ? String(error) : undefined
+      });
   }
 }
 
@@ -22,6 +26,10 @@ export async function getRoomById(req: Request, res: Response) {
     if (!room) return res.status(404).json({ error: 'Sala não encontrada' })
     res.json(room)
   } catch (error) {
-    res.status(500).json({ error: 'Erro ao buscar sala' })
+      console.error(error);
+      res.status(500).json({
+        error: 'Erro interno do servidor',
+        details: process.env.NODE_ENV === 'development' ? String(error) : undefined
+      });
   }
 }

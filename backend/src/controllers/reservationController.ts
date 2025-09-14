@@ -5,24 +5,28 @@ const prisma = new PrismaClient()
 
 export async function getReservations(req: Request, res: Response) {
   try {
-    const userId = req.query.userId as string | undefined
-    const where = userId ? { userId } : undefined
+    const userId = req.query.userId as string | undefined;
+    const where = userId ? { userId } : undefined;
     const reservations = await prisma.reservation.findMany({
       where,
       include: { room: true, user: true },
       orderBy: { startTime: 'asc' }
-    })
-    res.json(reservations)
+    });
+    res.json(reservations);
   } catch (error) {
-    res.status(500).json({ error: 'Erro ao buscar reservas' })
+    console.error(error);
+    res.status(500).json({
+      error: 'Erro interno do servidor',
+      details: process.env.NODE_ENV === 'development' ? String(error) : undefined
+    });
   }
 }
 
 export async function createReservation(req: Request, res: Response) {
   try {
-    const { roomId, userId, title, description, startTime, endTime } = req.body
+    const { roomId, userId, title, description, startTime, endTime } = req.body;
     if (!roomId || !userId || !title || !startTime || !endTime) {
-      return res.status(400).json({ error: 'Dados obrigatórios ausentes' })
+      return res.status(400).json({ error: 'Dados obrigatórios ausentes' });
     }
     const reservation = await prisma.reservation.create({
       data: {
@@ -34,10 +38,14 @@ export async function createReservation(req: Request, res: Response) {
         endTime: new Date(endTime),
         status: 'pending'
       }
-    })
-    res.status(201).json(reservation)
+    });
+    res.status(201).json(reservation);
   } catch (error) {
-    res.status(500).json({ error: 'Erro ao criar reserva' })
+    console.error(error);
+    res.status(500).json({
+      error: 'Erro interno do servidor',
+      details: process.env.NODE_ENV === 'development' ? String(error) : undefined
+    });
   }
 }
 
@@ -59,8 +67,11 @@ export async function updateReservation(req: Request, res: Response) {
     });
     res.json(reservation);
   } catch (error) {
-    console.error('Erro ao atualizar reserva:', error);
-    res.status(500).json({ error: 'Erro ao atualizar reserva', details: error instanceof Error ? error.message : error });
+    console.error(error);
+    res.status(500).json({
+      error: 'Erro interno do servidor',
+      details: process.env.NODE_ENV === 'development' ? String(error) : undefined
+    });
   }
 }
 
@@ -81,7 +92,10 @@ export async function cancelReservation(req: Request, res: Response) {
     });
     res.json(reservation);
   } catch (error) {
-    console.error('Erro ao cancelar reserva:', error);
-    res.status(500).json({ error: 'Erro ao cancelar reserva', details: error instanceof Error ? error.message : error });
+    console.error(error);
+    res.status(500).json({
+      error: 'Erro interno do servidor',
+      details: process.env.NODE_ENV === 'development' ? String(error) : undefined
+    });
   }
 }

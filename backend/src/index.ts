@@ -19,7 +19,13 @@ import adminRoutes from './routes/adminRoutes'
 // Configurações iniciais
 dotenv.config();
 const app = express();
-app.use(cors());
+const allowedOrigins = process.env.NODE_ENV === 'production'
+  ? ['https://seu-dominio.com']
+  : ['http://localhost:5173'];
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true,
+}));
 app.use(express.json());
 
 

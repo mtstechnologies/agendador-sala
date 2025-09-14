@@ -117,11 +117,29 @@ export type Room = Database['public']['Tables']['rooms']['Row']
 export type Reservation = Database['public']['Tables']['reservations']['Row']
 export type UserProfile = Database['public']['Tables']['user_profiles']['Row']
 
-export type ReservationWithRoom = Reservation & {
-  rooms: Room
-}
-
-export type ReservationWithDetails = Reservation & {
-  rooms: Room
-  user_profiles: UserProfile
+export type ReservationWithRoomAndUser = {
+  id: string;
+  roomId: string;
+  userId: string;
+  title: string;
+  description?: string | null;
+  startTime: string;
+  endTime: string;
+  status: string;
+  updatedAt: string;
+  room: {
+    id: string;
+    name: string;
+    capacity: number;
+    resources: string[];
+    // outros campos se necessário
+  };
+  user: {
+    id: string;
+    fullName: string;
+    email: string;
+    role: string;
+    department?: string | null;
+    // outros campos se necessário
+  };
 }
