@@ -2,7 +2,7 @@ import React from 'react'
 import { clsx } from 'clsx'
 
 interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
-  variant?: 'default' | 'success' | 'warning' | 'error' | 'info'
+  variant?: 'default' | 'success' | 'warning' | 'error' | 'info' | 'secondary'
   children: React.ReactNode
 }
 
@@ -17,6 +17,7 @@ export function Badge({ variant = 'default', children, className, ...props }: Ba
           'bg-yellow-100 text-yellow-800': variant === 'warning',
           'bg-red-100 text-red-800': variant === 'error',
           'bg-blue-100 text-blue-800': variant === 'info',
+          'border-transparent bg-gray-100 text-gray-800 hover:bg-gray-100/80': variant === 'secondary',
         },
         className
       )}

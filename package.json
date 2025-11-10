@@ -1,0 +1,12 @@
+{
+  "name": "agendador-sala",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint:docs": "node ./scripts/lint-docs.mjs"
+  },
+  "dependencies": {
+    "react-hot-toast": "^2.6.0"
+  }
+}

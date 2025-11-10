@@ -1,15 +1,24 @@
 import React, { useState } from 'react'
-import { useReservationsWithDetails, useUpdateReservation } from '../../hooks/useReservations'
+import { useReservationsPaginated } from '../../hooks/useReservations'
+import { useReservationEvents } from '../../hooks/useReservationEvents'
+import { useApproveReservation, useRejectReservation } from '../../hooks/useAdmin'
 import { ReservationCard } from '../../components/reservations/ReservationCard'
 import { Button } from '../../components/ui/Button'
+import Pagination from '../../components/ui/Pagination'
 import { Badge } from '../../components/ui/Badge'
 import { Users, Filter } from 'lucide-react'
 
 type FilterStatus = 'all' | 'pending' | 'approved' | 'rejected' | 'cancelled'
 
 export function AdminReservationsPage() {
-  const { data: reservations, isLoading } = useReservationsWithDetails()
-  const updateReservation = useUpdateReservation()
+  const [page, setPage] = useState(1)
+  const pageSize = 15
+  const { data, isLoading } = useReservationsPaginated(page, pageSize, { status: 'all' })
+  // Ativar SSE somente nesta página
+  useReservationEvents(true)
+  const reservations = data?.items || []
+  const approveMutation = useApproveReservation()
+  const rejectMutation = useRejectReservation()
   const [filter, setFilter] = useState<FilterStatus>('pending')
 
   const filteredReservations = reservations?.filter(reservation => {
@@ -19,7 +28,7 @@ export function AdminReservationsPage() {
 
   const handleApprove = async (id: string) => {
     try {
-      await updateReservation.mutateAsync({ id, status: 'approved' })
+      await approveMutation.mutateAsync(id)
     } catch (error) {
       console.error('Erro ao aprovar reserva:', error)
     }
@@ -28,21 +37,23 @@ export function AdminReservationsPage() {
   const handleReject = async (id: string) => {
     if (confirm('Tem certeza que deseja rejeitar esta reserva?')) {
       try {
-        await updateReservation.mutateAsync({ id, status: 'rejected' })
+        await rejectMutation.mutateAsync(id)
       } catch (error) {
         console.error('Erro ao rejeitar reserva:', error)
       }
     }
   }
 
-  const statusCounts = reservations?.reduce((acc, reservation) => {
+  
+
+  const statusCounts = reservations.reduce((acc, reservation) => {
     acc[reservation.status] = (acc[reservation.status] || 0) + 1
     return acc
   }, {} as Record<string, number>) || {}
 
   const filterOptions = [
     { value: 'pending', label: 'Pendentes', count: statusCounts.pending || 0 },
-    { value: 'all', label: 'Todas', count: reservations?.length || 0 },
+  { value: 'all', label: 'Todas', count: data?.total || 0 },
     { value: 'approved', label: 'Aprovadas', count: statusCounts.approved || 0 },
     { value: 'rejected', label: 'Rejeitadas', count: statusCounts.rejected || 0 },
     { value: 'cancelled', label: 'Canceladas', count: statusCounts.cancelled || 0 },
@@ -163,6 +174,8 @@ export function AdminReservationsPage() {
           </p>
         </div>
       )}
+
+      <Pagination page={page} totalPages={data?.totalPages || 1} total={data?.total || 0} onPageChange={setPage} />
     </div>
   )
 }

@@ -34,3 +34,34 @@ export function validateLogin(req: Request, res: Response, next: NextFunction) {
   }
   next();
 }
+
+export const forgotPasswordSchema = z.object({
+  email: z.string().email('Email inválido'),
+})
+
+export const resetPasswordSchema = z.object({
+  token: z.string().min(10, 'Token inválido'),
+  password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres'),
+})
+
+export function validateForgotPassword(req: Request, res: Response, next: NextFunction) {
+  const result = forgotPasswordSchema.safeParse(req.body)
+  if (!result.success) {
+    return res.status(400).json({
+      error: 'Dados inválidos',
+      details: result.error.errors.map(e => ({ path: e.path, message: e.message })),
+    })
+  }
+  next()
+}
+
+export function validateResetPassword(req: Request, res: Response, next: NextFunction) {
+  const result = resetPasswordSchema.safeParse(req.body)
+  if (!result.success) {
+    return res.status(400).json({
+      error: 'Dados inválidos',
+      details: result.error.errors.map(e => ({ path: e.path, message: e.message })),
+    })
+  }
+  next()
+}

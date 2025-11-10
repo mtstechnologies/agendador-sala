@@ -7,10 +7,12 @@ export interface Database {
           name: string
           capacity: number
           resources: string[]
+          bloco: string
+          department: string
           operating_hours: {
             start: string
             end: string
-          }
+          } | null
           is_active: boolean
           created_at: string
           updated_at: string
@@ -20,10 +22,12 @@ export interface Database {
           name: string
           capacity: number
           resources?: string[]
+          bloco: string
+          department: string
           operating_hours?: {
             start: string
             end: string
-          }
+          } | null
           is_active?: boolean
           created_at?: string
           updated_at?: string
@@ -33,10 +37,12 @@ export interface Database {
           name?: string
           capacity?: number
           resources?: string[]
+          bloco?: string
+          department?: string
           operating_hours?: {
             start: string
             end: string
-          }
+          } | null
           is_active?: boolean
           created_at?: string
           updated_at?: string
@@ -113,7 +119,18 @@ export interface Database {
   }
 }
 
-export type Room = Database['public']['Tables']['rooms']['Row']
+// Room em camelCase para alinhar com o backend (Prisma/Express)
+export interface Room {
+  id: string
+  name: string
+  capacity: number
+  resources: string[]
+  bloco: string
+  department: string
+  // O backend usa Json?; aqui tipamos como um intervalo opcional ou null se usado
+  operatingHours: { start: string; end: string } | null
+  isActive: boolean
+}
 export type Reservation = Database['public']['Tables']['reservations']['Row']
 export type UserProfile = Database['public']['Tables']['user_profiles']['Row']
 

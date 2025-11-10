@@ -1,14 +1,14 @@
 import React from 'react'
-import { format } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
 import { Calendar, Clock, MapPin, User } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card'
 import { Badge } from '../ui/Badge'
 import { Button } from '../ui/Button'
-import type { ReservationWithRoom, ReservationWithDetails } from '../../types/database'
+import type { ReservationWithRoomAndUser } from '../../types/database'
+import { formatTimeRangeFromIso, formatDateFromIsoWithOffset } from '../../lib/time'
+import { getEndIso, getRoomName, getStartIso, getUserName, isEnded } from '../../lib/reservation'
 
 interface ReservationCardProps {
-  reservation: ReservationWithRoom | ReservationWithDetails
+  reservation: ReservationWithRoomAndUser
   onCancel?: (id: string) => void
   onApprove?: (id: string) => void
   onReject?: (id: string) => void
@@ -38,18 +38,23 @@ export function ReservationCard({
   showUserInfo = false,
   showActions = true 
 }: ReservationCardProps) {
-  const startDate = new Date(reservation.start_time)
-  const endDate = new Date(reservation.end_time)
-  const isPast = endDate < new Date()
+  const startIso = getStartIso(reservation)
+  const endIso = getEndIso(reservation)
+  const isPast = isEnded(reservation)
   const canCancel = reservation.status === 'pending' || reservation.status === 'approved'
 
   return (
     <Card className="hover:shadow-md transition-shadow">
       <CardHeader>
-        <div className="flex justify-between items-start">
-          <CardTitle className="text-lg">{reservation.title}</CardTitle>
-          <Badge variant={statusVariants[reservation.status]}>
-            {statusLabels[reservation.status]}
+        <div className="flex justify-between items-start gap-2">
+          <CardTitle
+            className="flex-1 min-w-0 truncate"
+            title={reservation.title}
+          >
+            {reservation.title}
+          </CardTitle>
+          <Badge variant={statusVariants[reservation.status as keyof typeof statusVariants]}>
+            {statusLabels[reservation.status as keyof typeof statusLabels]}
           </Badge>
         </div>
       </CardHeader>
@@ -57,23 +62,23 @@ export function ReservationCard({
         <div className="space-y-3">
           <div className="flex items-center text-sm text-gray-600">
             <MapPin className="h-4 w-4 mr-2" />
-            {reservation.rooms.name}
+            {getRoomName(reservation)}
           </div>
 
           <div className="flex items-center text-sm text-gray-600">
             <Calendar className="h-4 w-4 mr-2" />
-            {format(startDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+            {startIso ? formatDateFromIsoWithOffset(startIso) : ''}
           </div>
 
           <div className="flex items-center text-sm text-gray-600">
             <Clock className="h-4 w-4 mr-2" />
-            {format(startDate, 'HH:mm')} às {format(endDate, 'HH:mm')}
+            {startIso && endIso ? formatTimeRangeFromIso(startIso, endIso) : ''}
           </div>
 
-          {showUserInfo && 'user_profiles' in reservation && (
+          {showUserInfo && reservation.user && (
             <div className="flex items-center text-sm text-gray-600">
               <User className="h-4 w-4 mr-2" />
-              {reservation.user_profiles.full_name}
+              {getUserName(reservation)}
             </div>
           )}
 
@@ -116,6 +121,8 @@ export function ReservationCard({
                   Cancelar
                 </Button>
               )}
+
+              
             </div>
           )}
         </div>

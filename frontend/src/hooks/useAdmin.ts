@@ -1,20 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { api } from '../lib/api'
+import { toast } from '../lib/toast'
 
 export function useApproveReservation() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`http://localhost:4000/admin/reservations/${id}/approve`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' }
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Erro ao aprovar reserva')
-      return data
+      return await api.put(`/admin/reservations/${id}/approve`)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reservations'] })
       queryClient.invalidateQueries({ queryKey: ['reservations-with-details'] })
+      toast.success('Reserva aprovada!')
     }
   })
 }
@@ -23,17 +20,12 @@ export function useRejectReservation() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`http://localhost:4000/admin/reservations/${id}/reject`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' }
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Erro ao rejeitar reserva')
-      return data
+      return await api.put(`/admin/reservations/${id}/reject`)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reservations'] })
       queryClient.invalidateQueries({ queryKey: ['reservations-with-details'] })
+      toast.success('Reserva rejeitada!')
     }
   })
 }
@@ -41,10 +33,6 @@ export function useRejectReservation() {
 export function useReports() {
   return useQuery({
     queryKey: ['reports'],
-    queryFn: async () => {
-      const res = await fetch('http://localhost:4000/admin/reports')
-      if (!res.ok) throw new Error('Erro ao buscar relatório')
-      return res.json()
-    }
+    queryFn: async () => api.get('/admin/reports')
   })
 }

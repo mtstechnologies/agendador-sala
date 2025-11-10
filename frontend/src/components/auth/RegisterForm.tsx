@@ -39,7 +39,8 @@ export function RegisterForm({ onToggleMode }: RegisterFormProps) {
   const onSubmit = async (data: RegisterFormData) => {
     try {
       setSubmitError(null)
-      await signUp(data.email, data.password, data.fullName, data.department)
+      const normalizedName = data.fullName.trim().toUpperCase()
+      await signUp(data.email, data.password, normalizedName, data.department)
     } catch (err: any) {
       setSubmitError(err.message || 'Erro ao criar conta')
     }

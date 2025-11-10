@@ -3,7 +3,7 @@ import { clsx } from 'clsx'
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost'
-  size?: 'sm' | 'md' | 'lg'
+  size?: 'sm' | 'md' | 'lg' | 'icon' | 'icon-sm'
   loading?: boolean
 }
 
@@ -22,12 +22,14 @@ export function Button({
         'inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none',
         {
           'bg-primary-600 text-white hover:bg-primary-700': variant === 'primary',
-          'bg-gray-100 text-gray-900 hover:bg-gray-200': variant === 'secondary',
-          'border border-gray-300 bg-white hover:bg-gray-50': variant === 'outline',
-          'hover:bg-gray-100': variant === 'ghost',
+          'bg-gray-100 text-gray-900 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700': variant === 'secondary',
+          'border border-gray-300 bg-white hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700': variant === 'outline',
+          'hover:bg-gray-100 dark:hover:bg-gray-800': variant === 'ghost',
           'h-8 px-3 text-sm': size === 'sm',
           'h-10 px-4 text-sm': size === 'md',
           'h-12 px-6 text-base': size === 'lg',
+          'h-10 w-10': size === 'icon',
+          'h-8 w-8': size === 'icon-sm',
         },
         className
       )}

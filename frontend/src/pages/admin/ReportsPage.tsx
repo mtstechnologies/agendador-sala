@@ -1,60 +1,32 @@
-import React from 'react'
-import { useReservationsWithDetails } from '../../hooks/useReservations'
+import React, { useMemo } from 'react'
 import { useRooms } from '../../hooks/useRooms'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card'
+import { StatCard } from '../../components/ui/StatCard'
 import { BarChart3, TrendingUp, Calendar, MapPin } from 'lucide-react'
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isWithinInterval } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
+import { startOfMonth, endOfMonth } from 'date-fns'
+import { useReports } from '../../hooks/useAdmin'
 
 export function ReportsPage() {
-  const { data: reservations } = useReservationsWithDetails()
-  const { data: rooms } = useRooms()
+  const { data: reports } = useReports()
+  const { data: rooms } = useRooms({ includeInactive: true })
 
   const currentMonth = new Date()
   const monthStart = startOfMonth(currentMonth)
   const monthEnd = endOfMonth(currentMonth)
 
-  // Reservas do mês atual
-  const monthlyReservations = reservations?.filter(reservation => {
-    const reservationDate = new Date(reservation.start_time)
-    return isWithinInterval(reservationDate, { start: monthStart, end: monthEnd })
-  }) || []
-
-  // Estatísticas gerais
-  const totalReservations = reservations?.length || 0
-  const approvedReservations = reservations?.filter(r => r.status === 'approved').length || 0
+  // Os dados já vêm agregados do backend via /admin/reports
+  const totalReservations = reports?.totals?.all ?? 0
+  const approvedReservations = reports?.totals?.approved ?? 0
   const occupancyRate = totalReservations > 0 ? (approvedReservations / totalReservations) * 100 : 0
 
-  // Salas mais utilizadas
-  const roomUsage = reservations?.reduce((acc, reservation) => {
-    if (reservation.status === 'approved') {
-      const roomName = reservation.rooms.name
-      acc[roomName] = (acc[roomName] || 0) + 1
-    }
-    return acc
-  }, {} as Record<string, number>) || {}
+  const topRooms = reports?.topRooms?.slice(0, 5) ?? []
+  const topUsers = reports?.topUsers?.slice(0, 5) ?? []
+  const statusStats = reports?.totals ?? {}
 
-  const topRooms = Object.entries(roomUsage)
-    .sort(([,a], [,b]) => b - a)
-    .slice(0, 5)
+  // Para exibir dados do mês atual, assumimos que o backend retorna também monthlyTotals opcionalmente
+  const monthlyCount = reports?.monthlyTotals?.[`${currentMonth.getFullYear()}-${String(currentMonth.getMonth()+1).padStart(2,'0')}`] ?? 0
 
-  // Usuários mais ativos
-  const userActivity = reservations?.reduce((acc, reservation) => {
-    // Ajuste para acessar corretamente o nome do usuário
-    const userName = reservation.user?.name || 'Desconhecido'
-    acc[userName] = (acc[userName] || 0) + 1
-    return acc
-  }, {} as Record<string, number>) || {}
-
-  const topUsers = Object.entries(userActivity)
-    .sort(([,a], [,b]) => b - a)
-    .slice(0, 5)
-
-  // Reservas por status
-  const statusStats = reservations?.reduce((acc, reservation) => {
-    acc[reservation.status] = (acc[reservation.status] || 0) + 1
-    return acc
-  }, {} as Record<string, number>) || {}
+  const inactiveRooms = (rooms || []).filter(r => !r.isActive).length
 
   return (
     <div className="space-y-6">
@@ -66,62 +38,12 @@ export function ReportsPage() {
       </div>
 
       {/* Estatísticas Gerais */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <Calendar className="h-8 w-8 text-blue-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total de Reservas</p>
-                <p className="text-2xl font-bold text-gray-900">{totalReservations}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <TrendingUp className="h-8 w-8 text-green-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Taxa de Aprovação</p>
-                <p className="text-2xl font-bold text-gray-900">{occupancyRate.toFixed(1)}%</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <MapPin className="h-8 w-8 text-purple-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Salas Ativas</p>
-                <p className="text-2xl font-bold text-gray-900">{rooms?.length || 0}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <BarChart3 className="h-8 w-8 text-orange-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Este Mês</p>
-                <p className="text-2xl font-bold text-gray-900">{monthlyReservations.length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+        <StatCard title="Total de Reservas" value={totalReservations} icon={Calendar} colorClass="text-blue-600" />
+        <StatCard title="Taxa de Aprovação" value={`${occupancyRate.toFixed(1)}%`} icon={TrendingUp} colorClass="text-green-600" />
+        <StatCard title="Salas Ativas" value={(rooms || []).filter(r => r.isActive).length} icon={MapPin} colorClass="text-purple-600" />
+  <StatCard title="Este Mês" value={monthlyCount} icon={BarChart3} colorClass="text-orange-600" />
+        <StatCard title="Salas Inativas" value={inactiveRooms} icon={BarChart3} colorClass="text-red-600" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -133,15 +55,15 @@ export function ReportsPage() {
           <CardContent>
             <div className="space-y-4">
               {topRooms.length > 0 ? (
-                topRooms.map(([roomName, count], index) => (
-                  <div key={roomName} className="flex items-center justify-between">
+                topRooms.map((entry: any, index: number) => (
+                  <div key={entry.roomName ?? entry.name ?? index} className="flex items-center justify-between">
                     <div className="flex items-center">
                       <span className="flex items-center justify-center w-6 h-6 bg-primary-100 text-primary-800 rounded-full text-xs font-medium mr-3">
                         {index + 1}
                       </span>
-                      <span className="text-sm font-medium text-gray-900">{roomName}</span>
+                      <span className="text-sm font-medium text-gray-900">{entry.roomName ?? entry.name ?? 'Sala'}</span>
                     </div>
-                    <span className="text-sm text-gray-600">{count} reservas</span>
+                    <span className="text-sm text-gray-600">{entry.count ?? entry.total ?? 0} reservas</span>
                   </div>
                 ))
               ) : (
@@ -159,15 +81,15 @@ export function ReportsPage() {
           <CardContent>
             <div className="space-y-4">
               {topUsers.length > 0 ? (
-                topUsers.map(([userName, count], index) => (
-                  <div key={userName} className="flex items-center justify-between">
+                topUsers.map((entry: any, index: number) => (
+                  <div key={entry.userName ?? entry.name ?? index} className="flex items-center justify-between">
                     <div className="flex items-center">
                       <span className="flex items-center justify-center w-6 h-6 bg-green-100 text-green-800 rounded-full text-xs font-medium mr-3">
                         {index + 1}
                       </span>
-                      <span className="text-sm font-medium text-gray-900">{userName}</span>
+                      <span className="text-sm font-medium text-gray-900">{entry.userName ?? entry.name ?? 'Usuário'}</span>
                     </div>
-                    <span className="text-sm text-gray-600">{count} reservas</span>
+                    <span className="text-sm text-gray-600">{entry.count ?? entry.total ?? 0} reservas</span>
                   </div>
                 ))
               ) : (

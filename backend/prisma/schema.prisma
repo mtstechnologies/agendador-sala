@@ -7,36 +7,63 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum ReservationStatus {
+  pending
+  approved
+  rejected
+  cancelled
+}
+
 model User {
-  id          String        @id @default(uuid())
-  fullName    String
-  email       String        @unique
-  password    String
-  role        String        @default("user")
-  department  String?
-  reservations Reservation[]
+  id                  String               @id @default(uuid()) @db.Uuid
+  fullName            String
+  email               String               @unique
+  matricula           String               @unique
+  password            String
+  role                String               @default("user")
+  department          String?
+  avatar_url          String?
+  reservations        Reservation[]
+  passwordResetTokens PasswordResetToken[]
 }
 
 model Room {
-  id          String        @id @default(uuid())
-  name        String
-  capacity    Int
-  resources   String[]
+  id             String        @id @default(uuid()) @db.Uuid
+  name           String
+  capacity       Int
+  resources      String[]
+  bloco          String
+  department     String
   operatingHours Json?
-  isActive    Boolean       @default(true)
-  reservations Reservation[]
+  isActive       Boolean       @default(true)
+  reservations   Reservation[]
 }
 
 model Reservation {
-  id          String        @id @default(uuid())
-  roomId      String
-  userId      String
+  id          String             @id @default(uuid()) @db.Uuid
+  roomId      String             @db.Uuid
+  userId      String             @db.Uuid
   title       String
   description String?
-  startTime   DateTime
-  endTime     DateTime
-  status      String        @default("pending")
-  updatedAt   DateTime      @updatedAt
-  room        Room          @relation(fields: [roomId], references: [id])
-  user        User          @relation(fields: [userId], references: [id])
+  startTime   DateTime           @db.Timestamptz
+  endTime     DateTime           @db.Timestamptz
+  status      ReservationStatus  @default(pending)
+  updatedAt   DateTime @updatedAt
+  room        Room     @relation(fields: [roomId], references: [id])
+  user        User     @relation(fields: [userId], references: [id])
+
+  @@index([roomId, startTime], name: "reservation_room_start_idx")
+  @@index([userId, startTime], name: "reservation_user_start_idx")
+  @@index([status], name: "reservation_status_idx")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  tokenHash String    @unique
+  expiresAt DateTime  @db.Timestamptz
+  usedAt    DateTime? @db.Timestamptz
+  createdAt DateTime  @default(now()) @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id])
 }

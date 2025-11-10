@@ -6,7 +6,8 @@ export const reservationCreateSchema = z.object({
   roomId: z.string().min(1, 'roomId é obrigatório'),
   userId: z.string().min(1, 'userId é obrigatório'),
   title: z.string().min(1, 'Título é obrigatório'),
-  description: z.string().optional(),
+  // Aceita string ou null ou undefined
+  description: z.union([z.string(), z.null()]).optional(),
   startTime: z.string().min(1, 'startTime é obrigatório'),
   endTime: z.string().min(1, 'endTime é obrigatório'),
 });
@@ -14,7 +15,7 @@ export const reservationCreateSchema = z.object({
 // Schema para atualização de reserva
 export const reservationUpdateSchema = z.object({
   title: z.string().min(1, 'Título é obrigatório').optional(),
-  description: z.string().optional(),
+  description: z.union([z.string(), z.null()]).optional(),
   startTime: z.string().min(1, 'startTime é obrigatório').optional(),
   endTime: z.string().min(1, 'endTime é obrigatório').optional(),
   status: z.enum(['pending', 'approved', 'rejected', 'cancelled']).optional(),

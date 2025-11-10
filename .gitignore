@@ -1,0 +1,46 @@
+# Node
+node_modules/
+.env
+.env.*
+dist/
+build/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# VSCode
+.vscode/
+
+# Prisma
+prisma/dev.db
+prisma/dev.db-journal
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testes
+coverage/
+
+# Outros
+*.local
+*.log
+
+# IDEs
+.idea/
+*.iml
+
+# Next.js
+.next/
+
+# Tailwind JIT
+.tailwind/
+
+# TypeScript
+*.tsbuildinfo
+
+# Misc
+*.swp
+*.swo

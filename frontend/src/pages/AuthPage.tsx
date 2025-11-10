@@ -1,11 +1,8 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { LoginForm } from '../components/auth/LoginForm'
-import { RegisterForm } from '../components/auth/RegisterForm'
 import { Calendar } from 'lucide-react'
 
 export function AuthPage() {
-  const [isLogin, setIsLogin] = useState(true)
-
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
@@ -21,11 +18,7 @@ export function AuthPage() {
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        {isLogin ? (
-          <LoginForm onToggleMode={() => setIsLogin(false)} />
-        ) : (
-          <RegisterForm onToggleMode={() => setIsLogin(true)} />
-        )}
+        <LoginForm />
       </div>
     </div>
   )

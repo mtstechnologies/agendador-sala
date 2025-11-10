@@ -1,8 +1,10 @@
 import React, { useState } from 'react'
+import { ErrorBoundary } from '../components/ui/ErrorBoundary'
 import { useRooms } from '../hooks/useRooms'
 import { useAuth } from '../hooks/useAuth'
 import { RoomCard } from '../components/rooms/RoomCard'
 import { ReservationForm } from '../components/reservations/ReservationForm'
+import { RoomForm } from '../components/rooms/RoomForm'
 import { Input } from '../components/ui/Input'
 import { Button } from '../components/ui/Button'
 import { Search, Plus } from 'lucide-react'
@@ -14,6 +16,7 @@ export function RoomsPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null)
   const [showReservationForm, setShowReservationForm] = useState(false)
+  const [showRoomForm, setShowRoomForm] = useState(false)
 
   const filteredRooms = rooms?.filter(room =>
     room.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -27,9 +30,16 @@ export function RoomsPage() {
     setShowReservationForm(true)
   }
 
+  const [reservationSuccess, setReservationSuccess] = useState(false)
+  const [listKey, setListKey] = useState(Date.now())
   const handleReservationSuccess = () => {
-    setShowReservationForm(false)
-    setSelectedRoom(null)
+    setReservationSuccess(true)
+    setTimeout(() => {
+      setShowReservationForm(false)
+      setSelectedRoom(null)
+      setReservationSuccess(false)
+      setListKey(Date.now()) // força remount da lista
+    }, 2000)
   }
 
   const handleReservationCancel = () => {
@@ -38,6 +48,14 @@ export function RoomsPage() {
   }
 
   if (showReservationForm && selectedRoom) {
+    if (reservationSuccess) {
+      return (
+        <div className="max-w-2xl mx-auto flex flex-col items-center justify-center py-16">
+          <div className="text-green-600 text-xl font-bold mb-4">Reserva realizada com sucesso!</div>
+          <div className="text-gray-500">Redirecionando...</div>
+        </div>
+      )
+    }
     return (
       <div className="max-w-2xl mx-auto">
         <ReservationForm
@@ -49,8 +67,20 @@ export function RoomsPage() {
     )
   }
 
+  if (showRoomForm) {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <RoomForm
+          onSuccess={() => setShowRoomForm(false)}
+          onCancel={() => setShowRoomForm(false)}
+        />
+      </div>
+    )
+  }
+
   return (
-    <div className="space-y-6">
+    <ErrorBoundary>
+    <div className="space-y-6" key={listKey}>
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Salas</h1>
@@ -60,9 +90,9 @@ export function RoomsPage() {
         </div>
         
         {isAdmin && (
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            Nova Sala
+          <Button variant="primary" size="sm" onClick={() => setShowRoomForm(true)}>
+            <Plus className="-ml-1 mr-2 h-4 w-4" />
+            Criar Sala
           </Button>
         )}
       </div>
@@ -111,5 +141,6 @@ export function RoomsPage() {
         </div>
       )}
     </div>
+    </ErrorBoundary>
   )
 }

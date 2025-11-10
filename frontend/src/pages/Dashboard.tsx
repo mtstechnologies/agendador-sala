@@ -1,19 +1,25 @@
 import React from 'react'
 import { useAuth } from '../hooks/useAuth'
-import { useReservations } from '../hooks/useReservations'
+import { useMyReservationsPaginated } from '../hooks/useReservations'
 import { useRooms } from '../hooks/useRooms'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
-import { Calendar, MapPin, Clock, Users } from 'lucide-react'
+import { StatCard } from '../components/ui/StatCard'
+import { Calendar, MapPin, Clock } from 'lucide-react'
+import { formatHourMinutesFromIsoWithOffset, formatDateFromIsoWithOffset } from '../lib/time'
+import { getStartIso, getEndIso, getRoomName, isUpcoming } from '../lib/reservation'
+import { Link } from 'react-router-dom'
 
 export function Dashboard() {
   const { user } = useAuth()
-  const { data: userReservations } = useReservations(user?.id)
+  const { data } = useMyReservationsPaginated(user?.id, 1, 20, { status: 'all' })
+  const userReservations = data?.items || []
   const { data: rooms } = useRooms()
 
-  const upcomingReservations = userReservations?.filter(
-    reservation => new Date(reservation.start_time) > new Date() && 
-    (reservation.status === 'approved' || reservation.status === 'pending')
-  ).slice(0, 3) || []
+  const nowMs = Date.now()
+  const upcomingReservations = (userReservations || [])
+    .filter((r) => isUpcoming(r, nowMs))
+    .sort((a, b) => Date.parse(getStartIso(a)!) - Date.parse(getStartIso(b)!))
+    .slice(0, 3)
 
   const stats = [
     {
@@ -24,7 +30,7 @@ export function Dashboard() {
     },
     {
       title: 'Minhas Reservas',
-      value: userReservations?.length || 0,
+      value: data?.total || 0,
       icon: Calendar,
       color: 'text-green-600'
     },
@@ -50,19 +56,13 @@ export function Dashboard() {
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {stats.map((stat) => (
-          <Card key={stat.title}>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <stat.icon className={`h-8 w-8 ${stat.color}`} />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                  <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <StatCard
+            key={stat.title}
+            title={stat.title}
+            value={stat.value}
+            icon={stat.icon}
+            colorClass={stat.color}
+          />
         ))}
       </div>
 
@@ -77,33 +77,37 @@ export function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {upcomingReservations.map((reservation) => (
-                <div
-                  key={reservation.id}
-                  className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
-                >
-                  <div>
-                    <h4 className="font-medium text-gray-900">{reservation.title}</h4>
-                    <p className="text-sm text-gray-600">{reservation.rooms.name}</p>
-                    <p className="text-sm text-gray-500">
-                      {new Date(reservation.start_time).toLocaleDateString('pt-BR')} às{' '}
-                      {new Date(reservation.start_time).toLocaleTimeString('pt-BR', {
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </p>
+              {upcomingReservations.map((reservation: any) => {
+                const startIso = getStartIso(reservation)!
+                const endIso = getEndIso(reservation)
+                return (
+                  <div
+                    key={reservation.id}
+                    className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/60 rounded-lg"
+                  >
+                    <div className="min-w-0">
+                      <h4 className="font-medium text-gray-900 dark:text-gray-100 truncate" title={reservation.title}>{reservation.title}</h4>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">
+                        {getRoomName(reservation)} {reservation.room?.bloco ? `(Bloco ${reservation.room.bloco})` : ''}
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {formatDateFromIsoWithOffset(startIso)} às {formatHourMinutesFromIsoWithOffset(startIso)}{endIso ? ` – ${formatHourMinutesFromIsoWithOffset(endIso)}` : ''}
+                      </p>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          reservation.status === 'approved'
+                            ? 'bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-300'
+                            : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-500/20 dark:text-yellow-300'
+                        }`}
+                      >
+                        {reservation.status === 'approved' ? 'Aprovada' : 'Pendente'}
+                      </span>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      reservation.status === 'approved' 
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {reservation.status === 'approved' ? 'Aprovada' : 'Pendente'}
-                    </span>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </CardContent>
         </Card>
@@ -116,8 +120,8 @@ export function Dashboard() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <a
-              href="/rooms"
+            <Link
+              to="/rooms"
               className="flex items-center p-4 bg-primary-50 rounded-lg hover:bg-primary-100 transition-colors"
             >
               <MapPin className="h-8 w-8 text-primary-600 mr-4" />
@@ -125,10 +129,10 @@ export function Dashboard() {
                 <h4 className="font-medium text-gray-900">Explorar Salas</h4>
                 <p className="text-sm text-gray-600">Veja todas as salas disponíveis</p>
               </div>
-            </a>
+            </Link>
             
-            <a
-              href="/reservations"
+            <Link
+              to="/reservations"
               className="flex items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
             >
               <Calendar className="h-8 w-8 text-green-600 mr-4" />
@@ -136,7 +140,7 @@ export function Dashboard() {
                 <h4 className="font-medium text-gray-900">Minhas Reservas</h4>
                 <p className="text-sm text-gray-600">Gerencie suas reservas</p>
               </div>
-            </a>
+            </Link>
           </div>
         </CardContent>
       </Card>

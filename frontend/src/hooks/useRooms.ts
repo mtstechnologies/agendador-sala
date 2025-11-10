@@ -1,79 +1,57 @@
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import type { Room } from '../types/database'
+import { toast } from '../lib/toast'
+import { useApiQuery } from './useApiQuery'
+import { useApiMutation } from './useApiMutation'
 
-export function useRooms() {
-  return useQuery({
-    queryKey: ['rooms'],
-    queryFn: async () => {
-      const res = await fetch('http://localhost:4000/rooms')
-      if (!res.ok) throw new Error('Erro ao buscar salas')
-      const data = await res.json()
-      return data as Room[]
-    }
+export function useRooms(options?: { includeInactive?: boolean }) {
+  return useApiQuery<Room[]>({
+    path: '/rooms',
+    queryKey: ['rooms', options?.includeInactive ?? false],
+    params: options?.includeInactive ? { includeInactive: true } : undefined,
   })
 }
 
 export function useRoom(id: string) {
-  return useQuery({
+  return useApiQuery<Room>({
+    path: `/rooms/${id}`,
     queryKey: ['room', id],
-    queryFn: async () => {
-      const res = await fetch(`http://localhost:4000/rooms/${id}`)
-      if (!res.ok) throw new Error('Erro ao buscar sala')
-      const data = await res.json()
-      return data as Room
-    },
-    enabled: !!id
+    enabled: !!id,
   })
 }
 
 export function useCreateRoom() {
   const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: async (room: Omit<Room, 'id' | 'created_at' | 'updated_at'>) => {
-      const res = await fetch('http://localhost:4000/rooms', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(room)
-      })
-      if (!res.ok) throw new Error('Erro ao criar sala')
-      return await res.json()
-    },
+  return useApiMutation<Omit<Room, 'id'>, Room>({
+    method: 'POST',
+    path: '/rooms',
+    invalidate: [ ['rooms'] ],
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['rooms'] })
+      toast.success('Sala criada com sucesso!')
     }
   })
 }
 
 export function useUpdateRoom() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: async ({ id, ...updates }: Partial<Room> & { id: string }) => {
-      const res = await fetch(`http://localhost:4000/rooms/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...updates, updated_at: new Date().toISOString() })
-      })
-      if (!res.ok) throw new Error('Erro ao atualizar sala')
-      return await res.json()
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['rooms'] })
+  return useApiMutation<{ id: string } & Partial<Room>, Room>({
+    method: 'PUT',
+    makePath: (vars) => `/rooms/${vars.id}`,
+    invalidate: [ ['rooms'], (qk) => qk[0] === 'room' ],
+    onSuccess: (_d, vars) => {
+      toast.success('Sala atualizada com sucesso!')
     }
   })
 }
 
 export function useDeleteRoom() {
   const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: async (id: string) => {
-      const res = await fetch(`http://localhost:4000/rooms/${id}`, {
-        method: 'DELETE'
-      })
-      if (!res.ok) throw new Error('Erro ao deletar sala')
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['rooms'] })
+  return useApiMutation<{ id: string; force?: boolean }, void>({
+    method: 'DELETE',
+    makePath: ({ id, force }) => `/rooms/${id}${force ? '?force=true' : ''}`,
+    invalidate: [ (qk) => qk[0] === 'rooms' ],
+    onSuccess: (_d, vars) => {
+      toast.success(vars.force ? 'Sala e reservas excluídas!' : 'Sala removida com sucesso!')
     }
   })
 }

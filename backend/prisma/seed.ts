@@ -4,27 +4,49 @@ import bcrypt from 'bcryptjs'
 const prisma = new PrismaClient()
 
 async function main() {
-  // Usuários
+  // Usuário admin seguro
+  const adminEmail = process.env.ADMIN_EMAIL || 'admin@escola.com'
+  const adminPassword = process.env.ADMIN_PASSWORD || 'admin123!troque'
+  const adminExists = await prisma.user.findUnique({ where: { email: adminEmail } })
+  if (!adminExists) {
+    const passwordHash = await bcrypt.hash(adminPassword, 10)
+    await prisma.user.create({
+      data: {
+        fullName: 'Admin',
+        email: adminEmail,
+        matricula: 'ADM0001',
+        password: passwordHash,
+        role: 'admin',
+        department: 'TI'
+      }
+    })
+    console.log(`Usuário admin criado: ${adminEmail}`)
+  } else {
+    console.log('Usuário admin já existe, não será recriado.')
+  }
+
+  // Usuários comuns
   const passwordHash = await bcrypt.hash('123456', 10)
-  const users = await prisma.user.createMany({
+  await prisma.user.createMany({
     data: [
-      { fullName: 'Admin', email: 'admin@escola.com', password: passwordHash, role: 'admin', department: 'TI' },
-      { fullName: 'Maria Silva', email: 'maria@escola.com', password: passwordHash, role: 'user', department: 'RH' },
-      { fullName: 'João Souza', email: 'joao@escola.com', password: passwordHash, role: 'user', department: 'Pedagogia' },
-      { fullName: 'Ana Lima', email: 'ana@escola.com', password: passwordHash, role: 'user', department: 'Direção' },
-      { fullName: 'Carlos Dias', email: 'carlos@escola.com', password: passwordHash, role: 'user', department: 'TI' },
-    ]
+      { fullName: 'Maria Silva', email: 'maria@escola.com', matricula: 'MAT0001', password: passwordHash, role: 'user', department: 'RH' },
+      { fullName: 'João Souza', email: 'joao@escola.com', matricula: 'MAT0002', password: passwordHash, role: 'user', department: 'Pedagogia' },
+      { fullName: 'Ana Lima', email: 'ana@escola.com', matricula: 'MAT0003', password: passwordHash, role: 'user', department: 'Direção' },
+      { fullName: 'Carlos Dias', email: 'carlos@escola.com', matricula: 'MAT0004', password: passwordHash, role: 'user', department: 'TI' },
+    ],
+    skipDuplicates: true
   })
 
   // Salas
   await prisma.room.createMany({
     data: [
-      { id: 'room-101', name: 'Sala de Aula 101', capacity: 30, resources: ['Projetor', 'Quadro Branco', 'Ar Condicionado'] },
-      { id: 'room-102', name: 'Sala de Aula 102', capacity: 25, resources: ['Projetor', 'Quadro Branco'] },
-      { id: 'lab-info-1', name: 'Laboratório de Informática 1', capacity: 20, resources: ['Computadores', 'Projetor'] },
-      { id: 'lab-info-2', name: 'Laboratório de Informática 2', capacity: 15, resources: ['Computadores'] },
-      { id: 'auditorio', name: 'Auditório', capacity: 100, resources: ['Palco', 'Projetor', 'Som'] },
-    ]
+      { id: 'room-101', name: 'Sala de Aula 101', capacity: 30, resources: ['Projetor', 'Quadro Branco', 'Ar Condicionado'], bloco: 'A', department: 'Matemática' },
+      { id: 'room-102', name: 'Sala de Aula 102', capacity: 25, resources: ['Projetor', 'Quadro Branco'], bloco: 'A', department: 'Português' },
+      { id: 'lab-info-1', name: 'Laboratório de Informática 1', capacity: 20, resources: ['Computadores', 'Projetor'], bloco: 'B', department: 'Informática' },
+      { id: 'lab-info-2', name: 'Laboratório de Informática 2', capacity: 15, resources: ['Computadores'], bloco: 'B', department: 'Informática' },
+      { id: 'auditorio', name: 'Auditório', capacity: 100, resources: ['Palco', 'Projetor', 'Som'], bloco: 'C', department: 'Eventos' },
+    ],
+    skipDuplicates: true
   })
 
   // Reservas
