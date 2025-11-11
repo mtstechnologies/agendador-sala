@@ -18,50 +18,51 @@ Entidades atuais:
 Futuras entidades (planejadas):
 
 ### 2.1 Diagrama ER (Mermaid)
+Nota: o Mermaid para ER Diagram possui conjunto limitado de tipos. Para renderizar corretamente, usamos tipos genéricos (string, int, boolean, date) e omitimos marcadores como PK/FK/UNIQUE.
 ```mermaid
 erDiagram
-  User ||--o{ Reservation : makes
-  Room ||--o{ Reservation : hosts
-  User ||--o{ PasswordResetToken : owns
+  USER ||--o{ RESERVATION : makes
+  ROOM ||--o{ RESERVATION : hosts
+  USER ||--o{ PASSWORDRESETTOKEN : owns
 
-  User {
-    uuid id PK
+  USER {
+    string id
     string fullName
-    string email UNIQUE
-    string matricula UNIQUE
+    string email
+    string matricula
     string password
     string role
     string department
-    string avatar_url
+    string avatarUrl
   }
-  Room {
-    uuid id PK
+  ROOM {
+    string id
     string name
     int capacity
-    string[] resources
+    string resources
     string bloco
     string department
-    jsonb operatingHours
+    string operatingHours
     boolean isActive
   }
-  Reservation {
-    uuid id PK
-    uuid roomId FK
-    uuid userId FK
+  RESERVATION {
+    string id
+    string roomId
+    string userId
     string title
     string description
-    timestamptz startTime
-    timestamptz endTime
-    enum status
-    timestamptz updatedAt
+    date startTime
+    date endTime
+    string status
+    date updatedAt
   }
-  PasswordResetToken {
-    uuid id PK
-    uuid userId FK
-    string tokenHash UNIQUE
-    timestamptz expiresAt
-    timestamptz usedAt
-    timestamptz createdAt
+  PASSWORDRESETTOKEN {
+    string id
+    string userId
+    string tokenHash
+    date expiresAt
+    date usedAt
+    date createdAt
   }
 ```
 
